@@ -1,0 +1,731 @@
+/* Study sidebar — "liquid glass" styling. Every colour reads a shell token
+   first (e.g. --glass-bg) and falls back to its own value, so the panel
+   matches the rest of the app once a theme is defined. */
+
+.st-root {
+  --st-glass: var(--glass-bg, rgba(255, 255, 255, 0.14));
+  --st-glass-strong: var(--glass-bg-strong, rgba(255, 255, 255, 0.22));
+  --st-edge: var(--rim, rgba(255, 255, 255, 0.32));
+  --st-text: var(--text, #f8f9fc);
+  --st-muted: var(--muted, rgba(248, 249, 252, 0.62));
+  --st-accent: var(--accent, #ff8a65);
+  --st-break: var(--accent-2, #6fd3b8);
+  --st-long: var(--accent-3, #8fa8ff);
+  --st-radius: var(--radius, 22px);
+  --st-blur: var(--glass-blur, 28px);
+  --st-phase: var(--st-accent);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  min-width: 280px;
+  padding: 12px;
+  box-sizing: border-box;
+  color: var(--st-text);
+  font-family: var(--font, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif);
+  font-size: 14px;
+  border-radius: var(--st-radius);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04) 45%, rgba(255, 255, 255, 0.08)),
+    var(--st-glass);
+  backdrop-filter: blur(var(--st-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--st-blur)) saturate(180%);
+  border: 1px solid var(--st-edge);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 50px rgba(0, 0, 0, 0.28);
+}
+
+.st-root *,
+.st-root *::before,
+.st-root *::after {
+  box-sizing: border-box;
+}
+
+.st-root button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.st-root button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.st-root :focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--st-phase) 80%, white);
+  outline-offset: 2px;
+}
+
+.st-muted {
+  color: var(--st-muted);
+  font-size: 12px;
+}
+
+.st-phase-focus {
+  --st-phase: var(--st-accent);
+}
+.st-phase-short {
+  --st-phase: var(--st-break);
+}
+.st-phase-long {
+  --st-phase: var(--st-long);
+}
+
+/* ---- header & panes ------------------------------------------------------ */
+
+.st-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.st-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.st-pane {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.st-pane[data-hidden] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.st-pane-reader {
+  overflow: hidden;
+}
+
+/* ---- shared controls ----------------------------------------------------- */
+
+.st-segment {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.st-segment button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--st-muted);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.st-segment button.is-active {
+  color: var(--st-text);
+  background: var(--st-glass-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.st-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--st-edge);
+  background: var(--st-glass);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: background 0.15s, transform 0.1s;
+}
+
+.st-icon-btn:hover:not(:disabled),
+.st-icon-btn.is-on {
+  background: var(--st-glass-strong);
+}
+
+.st-icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.st-icon-btn.st-sm {
+  width: 30px;
+  height: 30px;
+}
+
+.st-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 128px;
+  height: 52px;
+  padding: 0 24px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--st-phase) 92%, white), var(--st-phase));
+  color: #1b1b1f !important;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 8px 24px color-mix(in srgb, var(--st-phase) 45%, transparent);
+  transition: transform 0.1s, filter 0.15s;
+}
+
+.st-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.st-primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.st-card {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.st-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--st-muted);
+  margin-bottom: 6px;
+}
+
+.st-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--st-muted) !important;
+  font-size: 13px;
+}
+
+.st-link:hover {
+  color: var(--st-text) !important;
+}
+
+.st-error {
+  color: #ffb4a8;
+  font-size: 13px;
+}
+
+/* ---- timer --------------------------------------------------------------- */
+
+.st-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 6px 2px 12px;
+}
+
+.st-ring-wrap {
+  position: relative;
+  width: min(100%, 240px);
+  aspect-ratio: 1;
+  align-self: center;
+}
+
+.st-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.st-ring-track {
+  fill: rgba(0, 0, 0, 0.12);
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 10;
+}
+
+.st-ring-fill {
+  fill: none;
+  stroke: var(--st-phase);
+  stroke-width: 10;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--st-phase) 60%, transparent));
+  transition: stroke-dashoffset 0.3s linear, stroke 0.3s;
+}
+
+.st-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.st-clock {
+  font-size: 52px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.st-ring-label {
+  color: var(--st-muted);
+  font-size: 13px;
+}
+
+.st-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.st-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.st-dots span.is-done {
+  background: var(--st-phase);
+  box-shadow: 0 0 6px var(--st-phase);
+}
+
+.st-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.st-today {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  text-align: center;
+}
+
+.st-today > div + div {
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.st-stat {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.st-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.st-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.st-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.st-stepper button {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--st-edge);
+  background: var(--st-glass);
+  line-height: 1;
+}
+
+.st-stepper input,
+.st-page-input {
+  width: 44px;
+  height: 26px;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+
+.st-stepper input::-webkit-inner-spin-button,
+.st-stepper input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+.st-unit {
+  width: 52px;
+}
+
+.st-toggle input {
+  appearance: none;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.st-toggle input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s;
+}
+
+.st-toggle input:checked {
+  background: var(--st-break);
+}
+
+.st-toggle input:checked::after {
+  transform: translateX(18px);
+}
+
+.st-mini {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 3px 3px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.st-mini-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.st-mini-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--st-phase);
+  box-shadow: 0 0 6px var(--st-phase);
+}
+
+/* ---- reader -------------------------------------------------------------- */
+
+.st-reader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.st-reader.is-drag::after {
+  content: "Drop PDF to open";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--st-edge);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.st-reader-empty {
+  overflow-y: auto;
+}
+
+.st-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 16px 20px;
+  text-align: center;
+}
+
+.st-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--st-glass-strong);
+  border: 1px solid var(--st-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.st-empty-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.st-empty .st-primary {
+  margin-top: 8px;
+}
+
+.st-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-toolbar-nav {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.st-doc-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.st-pager,
+.st-zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.st-page-input {
+  height: 30px;
+}
+
+.st-zoom-value {
+  min-width: 52px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+
+.st-zoom-value:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.st-popover {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  max-height: 60%;
+  overflow-y: auto;
+  background: rgba(30, 32, 40, 0.72);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.st-error-bar {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 90, 70, 0.14);
+}
+
+.st-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.st-recent li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.st-recent-open {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+}
+
+.st-recent-open:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.st-recent-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.st-recent-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.st-pages {
+  /* Positioned so page offsetTop is measured from here. */
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  /* "safe" keeps the left edge reachable when zoomed wider than the panel. */
+  align-items: safe center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  outline: none;
+}
+
+.st-page {
+  position: relative;
+  flex: none;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.st-page canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.st-page-num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #b8bcc8;
+  font-size: 20px;
+}
+
+.st-loading {
+  position: absolute;
+  inset: auto 0 16px;
+  margin: auto;
+  width: max-content;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* pdf.js text layer: invisible text over the bitmap so you can select and copy. */
+.st-page .textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  text-align: initial;
+  transform-origin: 0 0;
+  forced-color-adjust: none;
+  z-index: 1;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.st-page .textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+}
+
+.st-page .textLayer > :not(.markedContent),
+.st-page .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.st-page .textLayer .markedContent {
+  display: contents;
+}
+
+.st-page .textLayer ::selection {
+  background: rgba(0, 110, 255, 0.28);
+}
+
+.st-page .textLayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-root * {
+    transition: none !important;
+  }
+}

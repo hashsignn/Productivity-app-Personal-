@@ -62,6 +62,11 @@ function mock(cmd: string, a: Record<string, unknown>): unknown {
       }
       return null;
     }
+    case "read_json_file":
+      return get(`file:${a.name}`) ?? null;
+    case "write_json_file":
+      set(`file:${a.name}`, a.data);
+      return null;
     case "set_wallpaper":
       return String(a.filePath);
     default:

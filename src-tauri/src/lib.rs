@@ -13,6 +13,8 @@ pub fn run() {
             storage::load_settings,
             storage::save_settings,
             storage::set_wallpaper,
+            storage::read_json_file,
+            storage::write_json_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Glass Planner");

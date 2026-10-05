@@ -62,5 +62,6 @@ export default function Study() {
 window; `"main"` (the default) swaps the main view. Shared data types are in
 `src/lib/types.ts` and storage calls in `src/lib/storage.ts`
 (`loadDay`, `saveDay`, `listDays`, `loadDays`, `addPhoto`, `deletePhoto`,
+`readJson`, `writeJson`,
 `photoSrc`, `onDayChanged`). Task categories and their colours are
 `CATEGORIES` in `src/lib/parser.ts`.

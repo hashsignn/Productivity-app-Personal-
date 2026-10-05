@@ -194,3 +194,29 @@ pub fn set_wallpaper(app: AppHandle, file_path: String) -> Res<String> {
     fs::copy(&src, dir.join(&name)).map_err(err)?;
     Ok(name)
 }
+
+/// Generic JSON files for feature panels, e.g. "study.json". Plain names only.
+fn named_json(app: &AppHandle, name: &str) -> Res<PathBuf> {
+    let ok = name.ends_with(".json")
+        && name.len() <= 64
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+        && !name.starts_with('.')
+        && name != "settings.json";
+    if !ok {
+        return Err(format!("invalid file name: {name}"));
+    }
+    Ok(root(app)?.join(name))
+}
+
+#[tauri::command]
+pub fn read_json_file(app: AppHandle, name: String) -> Res<Option<Value>> {
+    read_json(&named_json(&app, &name)?)
+}
+
+#[tauri::command]
+pub fn write_json_file(app: AppHandle, name: String, data: Value) -> Res<()> {
+    let s = serde_json::to_string_pretty(&data).map_err(err)?;
+    write_atomic(&named_json(&app, &name)?, &s)
+}

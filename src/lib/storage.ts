@@ -64,6 +64,15 @@ export async function fileSrc(relative: string): Promise<string> {
   return convertFileSrc(`${dir}${sep}${relative.replaceAll("/", sep)}`);
 }
 
+/** Reads a panel's own JSON file in the app data dir (e.g. "study.json"); undefined if missing. */
+export async function readJson<T>(name: string): Promise<T | undefined> {
+  return (await invoke<T | null>("read_json_file", { name })) ?? undefined;
+}
+
+export function writeJson(name: string, data: unknown): Promise<void> {
+  return invoke("write_json_file", { name, data });
+}
+
 // Panels listen for this so a change in one (ticking a task, adding a photo)
 // shows up in the others without a reload.
 const DAY_CHANGED = "day-changed";

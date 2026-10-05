@@ -110,12 +110,34 @@ pub fn list_days(app: AppHandle) -> Res<Vec<String>> {
     Ok(dates)
 }
 
-fn image_ext(path: &Path) -> String {
-    path.extension()
+/// Picture types the photo and wallpaper pickers offer. Anything else is
+/// refused so these commands cannot be used to copy arbitrary files (say, a
+/// document or a key file) into the folder the webview is allowed to read.
+const IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "bmp", "avif"];
+
+/// Checks that `path` is an existing image file and returns its extension.
+fn image_ext(path: &Path) -> Res<String> {
+    let ext = path
+        .extension()
         .and_then(|e| e.to_str())
         .map(|e| e.to_ascii_lowercase())
-        .filter(|e| e.len() <= 5 && e.chars().all(|c| c.is_ascii_alphanumeric()))
-        .unwrap_or_else(|| "img".into())
+        .filter(|e| IMAGE_EXTS.contains(&e.as_str()))
+        .ok_or("only image files (png, jpg, gif, webp, bmp, avif) can be added")?;
+    if !fs::metadata(path).map_err(err)?.is_file() {
+        return Err("not a file".into());
+    }
+    Ok(ext)
+}
+
+/// A bare file name with no folder parts, so a value read back from a day
+/// file can never point outside the folder it is joined onto.
+fn plain_file_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 128
+        && !name.starts_with('.')
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
 }
 
 /// Copies the file into photos/ and appends it to the day. Returns the new Photo.
@@ -128,7 +150,7 @@ pub fn add_photo(
 ) -> Res<Value> {
     let src = PathBuf::from(&file_path);
     let id = uuid::Uuid::new_v4().to_string();
-    let file_name = format!("{id}.{}", image_ext(&src));
+    let file_name = format!("{id}.{}", image_ext(&src)?);
     fs::copy(&src, subdir(&app, "photos")?.join(&file_name)).map_err(err)?;
 
     let mut photo = Map::new();
@@ -155,7 +177,7 @@ pub fn delete_photo(app: AppHandle, date: String, photo_id: String) -> Res<()> {
     let photos = day["photos"].as_array_mut().ok_or("day.photos is not a list")?;
     if let Some(i) = photos.iter().position(|p| p["id"] == json!(photo_id)) {
         let removed = photos.remove(i);
-        if let Some(name) = removed["fileName"].as_str() {
+        if let Some(name) = removed["fileName"].as_str().filter(|n| plain_file_name(n)) {
             let _ = fs::remove_file(subdir(&app, "photos")?.join(name));
         }
         write_day(&app, &day)?;
@@ -179,6 +201,7 @@ pub fn save_settings(app: AppHandle, settings: Value) -> Res<()> {
 #[tauri::command]
 pub fn set_wallpaper(app: AppHandle, file_path: String) -> Res<String> {
     let src = PathBuf::from(&file_path);
+    let ext = image_ext(&src)?;
     let dir = root(&app)?;
     // A fresh name each time so the webview does not show a cached image.
     for e in fs::read_dir(&dir).map_err(err)?.flatten() {
@@ -189,7 +212,7 @@ pub fn set_wallpaper(app: AppHandle, file_path: String) -> Res<String> {
     let name = format!(
         "wallpaper-{}.{}",
         chrono::Local::now().timestamp_millis(),
-        image_ext(&src)
+        ext
     );
     fs::copy(&src, dir.join(&name)).map_err(err)?;
     Ok(name)
@@ -197,13 +220,7 @@ pub fn set_wallpaper(app: AppHandle, file_path: String) -> Res<String> {
 
 /// Generic JSON files for feature panels, e.g. "study.json". Plain names only.
 fn named_json(app: &AppHandle, name: &str) -> Res<PathBuf> {
-    let ok = name.ends_with(".json")
-        && name.len() <= 64
-        && name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
-        && !name.starts_with('.')
-        && name != "settings.json";
+    let ok = name.ends_with(".json") && plain_file_name(name) && name.len() <= 64 && name != "settings.json";
     if !ok {
         return Err(format!("invalid file name: {name}"));
     }
@@ -219,4 +236,36 @@ pub fn read_json_file(app: AppHandle, name: String) -> Res<Option<Value>> {
 pub fn write_json_file(app: AppHandle, name: String, data: Value) -> Res<()> {
     let s = serde_json::to_string_pretty(&data).map_err(err)?;
     write_atomic(&named_json(&app, &name)?, &s)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn plain_names_only() {
+        assert!(plain_file_name("0b6f-photo.jpg"));
+        assert!(!plain_file_name("../settings.json"));
+        assert!(!plain_file_name("..\\..\\Windows\\win.ini"));
+        assert!(!plain_file_name("C:evil.jpg"));
+        assert!(!plain_file_name(".hidden"));
+        assert!(!plain_file_name(""));
+    }
+
+    #[test]
+    fn only_existing_images() {
+        let dir = std::env::temp_dir().join(format!("gp-test-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        let png = dir.join("a.PNG");
+        fs::write(&png, b"x").unwrap();
+        assert_eq!(image_ext(&png).unwrap(), "png");
+        let doc = dir.join("secret.txt");
+        fs::write(&doc, b"x").unwrap();
+        assert!(image_ext(&doc).is_err());
+        assert!(image_ext(&dir.join("missing.jpg")).is_err());
+        let folder = dir.join("folder.jpg");
+        fs::create_dir_all(&folder).unwrap();
+        assert!(image_ext(&folder).is_err());
+        fs::remove_dir_all(&dir).unwrap();
+    }
 }

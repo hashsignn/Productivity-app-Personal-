@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { readJson, writeJson } from "../../lib/storage";
 import { DEFAULT_SETTINGS, initialState, type TimerSettings, type TimerState } from "./pomodoro/timer";
 
 // Everything the study sidebar remembers lives in one file, study.json,
@@ -63,48 +64,22 @@ function normalize(raw: unknown): StudyData {
   };
 }
 
-// ---- storage backend -------------------------------------------------------
-
-interface Backend {
-  read(): Promise<string | null>;
-  write(text: string): Promise<void>;
-}
-
-const localBackend: Backend = {
-  async read() {
-    try {
-      return localStorage.getItem(`study:${FILE}`);
-    } catch {
-      return null;
-    }
-  },
-  async write(text) {
-    try {
-      localStorage.setItem(`study:${FILE}`, text);
-    } catch {
-      /* storage full or unavailable: keep running in memory */
-    }
-  },
-};
-
-let backend: Backend = localBackend;
-
-/** Lets the app shell point study.json at its own storage (e.g. the app data dir). */
-export function setStudyBackend(b: Backend) {
-  backend = b;
-}
+// ---- storage ---------------------------------------------------------------
 
 export async function loadStudy(): Promise<StudyData> {
   try {
-    const text = await backend.read();
-    return normalize(text ? JSON.parse(text) : null);
+    return normalize(await readJson<StudyData>(FILE));
   } catch {
     return defaultStudyData();
   }
 }
 
 export async function saveStudy(data: StudyData): Promise<void> {
-  await backend.write(JSON.stringify(data, null, 2));
+  try {
+    await writeJson(FILE, data);
+  } catch {
+    /* keep running in memory; the next change retries the write */
+  }
 }
 
 // ---- React hook ------------------------------------------------------------

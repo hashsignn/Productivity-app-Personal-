@@ -5,13 +5,13 @@
 .st-root {
   --st-glass: var(--glass-bg, rgba(255, 255, 255, 0.14));
   --st-glass-strong: var(--glass-bg-strong, rgba(255, 255, 255, 0.22));
-  --st-edge: var(--glass-border, rgba(255, 255, 255, 0.32));
+  --st-edge: var(--rim, rgba(255, 255, 255, 0.32));
   --st-text: var(--text, #f8f9fc);
-  --st-muted: var(--text-muted, rgba(248, 249, 252, 0.62));
+  --st-muted: var(--muted, rgba(248, 249, 252, 0.62));
   --st-accent: var(--accent, #ff8a65);
   --st-break: var(--accent-2, #6fd3b8);
   --st-long: var(--accent-3, #8fa8ff);
-  --st-radius: var(--radius-lg, 22px);
+  --st-radius: var(--radius, 22px);
   --st-blur: var(--glass-blur, 28px);
   --st-phase: var(--st-accent);
 

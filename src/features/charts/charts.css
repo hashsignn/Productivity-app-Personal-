@@ -1,66 +1,41 @@
 /* Progress charts. Glass cards over the widget's wallpaper; one blue hue carries all data. */
 
+/* Text follows the shell's --text/--muted; the shell is dark unless .app has theme-light. */
 .charts-root {
-  --c-card: rgba(255, 255, 255, 0.55);
-  --c-card-border: rgba(255, 255, 255, 0.6);
-  --c-ink: #0b0b0b;
-  --c-ink-2: #3d3c39;
-  --c-muted: #5f5e59;
-  --c-grid: rgba(11, 11, 11, 0.1);
-  --c-axis: rgba(11, 11, 11, 0.28);
-  --c-bar: #2a78d6;
-  --c-track: #b7d3f6;
-  --c-heat-empty: rgba(11, 11, 11, 0.08);
-  --c-heat-0: #b7d3f6;
-  --c-heat-1: #86b6ef;
-  --c-heat-2: #3987e5;
-  --c-heat-3: #1c5cab;
-  --c-tip: rgba(255, 255, 255, 0.92);
-
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  color: var(--c-ink);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 13px;
-  transition: opacity 0.2s;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) .charts-root {
-    --c-card: rgba(28, 28, 30, 0.45);
-    --c-card-border: rgba(255, 255, 255, 0.14);
-    --c-ink: #ffffff;
-    --c-ink-2: #d6d5cc;
-    --c-muted: #a9a8a0;
-    --c-grid: rgba(255, 255, 255, 0.1);
-    --c-axis: rgba(255, 255, 255, 0.3);
-    --c-bar: #3987e5;
-    --c-track: rgba(134, 182, 239, 0.28);
-    --c-heat-empty: rgba(255, 255, 255, 0.08);
-    --c-heat-0: #184f95;
-    --c-heat-1: #256abf;
-    --c-heat-2: #5598e7;
-    --c-heat-3: #9ec5f4;
-    --c-tip: rgba(28, 28, 30, 0.92);
-  }
-}
-:root[data-theme="dark"] .charts-root {
-  --c-card: rgba(28, 28, 30, 0.45);
-  --c-card-border: rgba(255, 255, 255, 0.14);
-  --c-ink: #ffffff;
-  --c-ink-2: #d6d5cc;
-  --c-muted: #a9a8a0;
-  --c-grid: rgba(255, 255, 255, 0.1);
-  --c-axis: rgba(255, 255, 255, 0.3);
+  --c-ink: var(--text, #fff);
+  --c-ink-2: var(--muted, rgba(255, 255, 255, 0.66));
+  --c-muted: var(--muted, rgba(255, 255, 255, 0.66));
+  --c-grid: rgba(255, 255, 255, 0.14);
+  --c-axis: rgba(255, 255, 255, 0.35);
+  --c-pill: rgba(255, 255, 255, 0.24);
   --c-bar: #3987e5;
-  --c-track: rgba(134, 182, 239, 0.28);
-  --c-heat-empty: rgba(255, 255, 255, 0.08);
+  --c-heat-empty: rgba(255, 255, 255, 0.1);
   --c-heat-0: #184f95;
   --c-heat-1: #256abf;
   --c-heat-2: #5598e7;
   --c-heat-3: #9ec5f4;
-  --c-tip: rgba(28, 28, 30, 0.92);
+  --c-tip: rgba(20, 24, 36, 0.9);
+  --c-tip-rim: rgba(255, 255, 255, 0.2);
+
+  display: flex;
+  flex-direction: column;
+  color: var(--c-ink);
+  font-size: 13px;
+  transition: opacity 0.2s;
+}
+
+.theme-light .charts-root {
+  --c-grid: rgba(16, 20, 32, 0.1);
+  --c-axis: rgba(16, 20, 32, 0.3);
+  --c-pill: rgba(255, 255, 255, 0.7);
+  --c-bar: #2a78d6;
+  --c-heat-empty: rgba(16, 20, 32, 0.08);
+  --c-heat-0: #b7d3f6;
+  --c-heat-1: #86b6ef;
+  --c-heat-2: #3987e5;
+  --c-heat-3: #1c5cab;
+  --c-tip: rgba(255, 255, 255, 0.94);
+  --c-tip-rim: rgba(16, 20, 32, 0.12);
 }
 
 .charts-root[data-loading="true"] {
@@ -85,10 +60,7 @@
   display: inline-flex;
   padding: 3px;
   border-radius: 999px;
-  background: var(--c-card);
-  border: 1px solid var(--c-card-border);
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  background: var(--c-grid);
 }
 .charts-seg button,
 .charts-link {
@@ -107,8 +79,8 @@
 .charts-seg button.is-on {
   color: var(--c-ink);
   font-weight: 600;
-  background: var(--c-card-border);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  background: var(--c-pill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .charts-root button:focus-visible,
 .charts-root [tabindex]:focus-visible {
@@ -116,19 +88,7 @@
   outline-offset: 2px;
 }
 
-/* Cards and tiles */
-.charts-card,
-.charts-tile {
-  background: var(--c-card);
-  border: 1px solid var(--c-card-border);
-  border-radius: 20px;
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-.charts-card {
-  padding: 14px 16px 12px;
-}
+/* Cards and tiles (glass look comes from the shell's .glass .card) */
 .charts-card h3 {
   margin: 0 0 10px;
 }
@@ -149,9 +109,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
-}
-.charts-tile {
-  padding: 12px 14px;
 }
 .charts-tile-value {
   font-size: 26px;
@@ -207,8 +164,20 @@
 .c-bar {
   fill: var(--c-bar);
 }
-.c-track {
-  fill: var(--c-track);
+/* Hours bars wear the category colour the checklist uses; planned is a faded track. */
+.c-cat-bar {
+  fill: var(--cat);
+}
+.c-key-done {
+  fill: var(--c-ink);
+}
+.c-cat-track {
+  fill: var(--cat);
+  fill-opacity: 0.28;
+}
+.c-key-planned {
+  fill: var(--c-ink);
+  fill-opacity: 0.3;
 }
 .c-hit {
   fill: transparent;
@@ -260,7 +229,7 @@
   padding: 6px 10px;
   border-radius: 10px;
   background: var(--c-tip);
-  border: 1px solid var(--c-card-border);
+  border: 1px solid var(--c-tip-rim);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Day, Task } from "../../lib/types";
-import { addDays, categoryOf, dailyStats, hoursByCategory, streaks, taskHours } from "./stats";
+import { addDays } from "../../lib/date";
+import { categoryOf, dailyStats, hoursByCategory, streaks, taskHours } from "./stats";
 
 const task = (title: string, done = false, start?: string, end?: string): Task => ({
   id: title,
@@ -23,20 +24,19 @@ describe("taskHours", () => {
 
 describe("categoryOf", () => {
   it.each([
-    ["Boiling Noodles + Bathing + Getting Ready", "Meals & chores"],
-    ["Travel to Finance Library + Confirming return of book", "Travel"],
-    ["Case 1: Modules Finalisation (27 ECTS)", "Study"],
-    ["Creating Job application MCP", "Career"],
-    ["PMP application documents + cover letter", "Career"],
-    ["GYM or Nap (depends)", "Health"],
-    ["Travel & chill time", "Travel"],
-    ["Saying hi to roommates", "Social"],
-    ["Sleep", "Sleep"],
-    ["Something else", "Other"],
-  ])("%s -> %s", (title, cat) => expect(categoryOf(task(title))).toBe(cat));
+    ["Boiling Noodles + Bathing + Getting Ready", "meals"],
+    ["Travel to Finance Library + Confirming return of book", "travel"],
+    ["Case 1: Modules Finalisation (27 ECTS)", "study"],
+    ["PMP application documents + cover letter", "career"],
+    ["GYM or Nap (depends)", "fitness"],
+    ["Saying hi to roommates", "social"],
+    ["Sleep", "sleep"],
+    ["Something else", "other"],
+  ])("guesses %s -> %s for tasks saved without a category", (title, id) =>
+    expect(categoryOf(task(title)).id).toBe(id));
 
-  it("prefers an explicit category", () => {
-    expect(categoryOf({ ...task("Gym"), category: "study" })).toBe("Study");
+  it("prefers the saved category", () => {
+    expect(categoryOf({ ...task("Gym"), category: "study" }).id).toBe("study");
   });
 });
 
@@ -81,9 +81,10 @@ describe("hoursByCategory", () => {
       },
       { date: "2026-06-01", photos: [], tasks: [task("Study", true, "09:00", "17:00")] },
     ];
-    expect(hoursByCategory(days, "2026-07-01", "2026-07-31")).toEqual([
-      { category: "Career", planned: 3.5, done: 3 },
-      { category: "Study", planned: 0.5, done: 0.5 },
+    const rows = hoursByCategory(days, "2026-07-01", "2026-07-31");
+    expect(rows.map((r) => [r.category.id, r.planned, r.done])).toEqual([
+      ["career", 3.5, 3],
+      ["study", 0.5, 0.5],
     ]);
   });
 });

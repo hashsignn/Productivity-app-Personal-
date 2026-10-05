@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { addDays, STREAK_THRESHOLD, type CategoryHours, type DayStat } from "./stats";
+import { addDays, fromISODate } from "../../lib/date";
+import { STREAK_THRESHOLD, type CategoryHours, type DayStat } from "./stats";
 import { useTipHandlers } from "./Tooltip";
 
 export function useWidth<T extends Element>() {
@@ -15,8 +16,7 @@ export function useWidth<T extends Element>() {
 }
 
 export function fmtDate(iso: string, opts: Intl.DateTimeFormatOptions = { weekday: "short", day: "numeric", month: "short" }) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, opts);
+  return fromISODate(iso).toLocaleDateString(undefined, opts);
 }
 
 export const pct = (r: number) => `${Math.round(r * 100)}%`;
@@ -112,8 +112,7 @@ export function StreakCalendar({ stats, today }: { stats: Map<string, DayStat>; 
   const H = 7 * (cell + gap);
 
   // Columns are Monday-start weeks; the last column holds this week.
-  const [ty, tm, td] = today.split("-").map(Number);
-  const dow = (new Date(ty, tm - 1, td).getDay() + 6) % 7; // Mon = 0
+  const dow = (fromISODate(today).getDay() + 6) % 7; // Mon = 0
   const start = addDays(today, -dow - 7 * (HEAT_WEEKS - 1));
 
   const cells = [];
@@ -187,12 +186,12 @@ export function HoursChart({ rows }: { rows: CategoryHours[] }) {
           {rows.map((r, i) => {
             const cy = i * rowH + rowH / 2;
             return (
-              <g key={r.category}>
+              <g key={r.category.id} style={{ "--cat": r.category.color } as React.CSSProperties}>
                 <text x={0} y={cy} dy="0.32em" className="c-label">
-                  {r.category}
+                  {r.category.label}
                 </text>
-                <path d={rightRoundedBar(labelW, cy - barH / 2, x(r.planned), barH, 4)} className="c-track" />
-                {r.done > 0 && <path d={rightRoundedBar(labelW, cy - barH / 2, x(r.done), barH, 4)} className="c-bar" />}
+                <path d={rightRoundedBar(labelW, cy - barH / 2, x(r.planned), barH, 4)} className="c-cat-track" />
+                {r.done > 0 && <path d={rightRoundedBar(labelW, cy - barH / 2, x(r.done), barH, 4)} className="c-cat-bar" />}
                 <text x={width} y={cy} dy="0.32em" textAnchor="end" className="c-value">
                   {num(r.done)} / {hrs(r.planned)}
                 </text>
@@ -202,7 +201,7 @@ export function HoursChart({ rows }: { rows: CategoryHours[] }) {
                   width={width}
                   height={rowH}
                   className="c-hit"
-                  {...tip({ value: `${hrs(r.done)} of ${hrs(r.planned)} done`, label: r.category })}
+                  {...tip({ value: `${hrs(r.done)} of ${hrs(r.planned)} done`, label: r.category.label })}
                 />
               </g>
             );
@@ -211,11 +210,11 @@ export function HoursChart({ rows }: { rows: CategoryHours[] }) {
       )}
       <div className="charts-legend">
         <svg width={12} height={12} aria-hidden>
-          <rect width={12} height={12} rx={3} className="c-bar" />
+          <rect width={12} height={12} rx={3} className="c-key-done" />
         </svg>
         <span>Done</span>
         <svg width={12} height={12} aria-hidden>
-          <rect width={12} height={12} rx={3} className="c-track" />
+          <rect width={12} height={12} rx={3} className="c-key-planned" />
         </svg>
         <span>Planned</span>
       </div>

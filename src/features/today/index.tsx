@@ -4,9 +4,10 @@ import type { FeatureMeta } from "../../shell/registry";
 import type { Day, Task } from "../../lib/types";
 import { loadDay, onDayChanged, saveDay } from "../../lib/storage";
 import { addDays, durationMinutes, formatLongDate, formatTime, newId, toISODate, toMinutes } from "../../lib/date";
-import { categoryOf, parseLine } from "../../lib/parser";
+import { categoryOf, guessCategory, parseLine } from "../../lib/parser";
 import ProgressRing from "./ProgressRing";
 import PasteSheet from "./PasteSheet";
+import TaskEditor, { type TaskEdit } from "./TaskEditor";
 
 export const meta: FeatureMeta = { title: "Today", icon: "✓", order: 0 };
 
@@ -80,10 +81,21 @@ export default function Today() {
     setDraft("");
   };
 
-  const rename = (id: string, title: string) => {
+  const saveEdit = (id: string, edit: TaskEdit) => {
     setEditing(null);
-    if (!title.trim()) return;
-    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, title: title.trim() } : t)));
+    setTasks((ts) => {
+      const t = ts.find((x) => x.id === id);
+      if (!t) return ts;
+      const edited: Task = {
+        ...t,
+        ...edit,
+        category: edit.title !== t.title ? guessCategory(edit.title) : t.category,
+      };
+      const rest = ts.filter((x) => x.id !== id);
+      // Re-slot by time only when the start moved, so manual order is kept otherwise.
+      if (edited.start === t.start) return ts.map((x) => (x.id === id ? edited : x));
+      return insertByTime(rest, edited);
+    });
   };
 
   const repeatYesterday = async () => {
@@ -167,35 +179,31 @@ export default function Today() {
                 >
                   {t.done ? "✓" : ""}
                 </button>
-                <div className="task-main">
-                  {editing === t.id ? (
-                    <input
-                      autoFocus
-                      className="inline-edit"
-                      defaultValue={t.title}
-                      onBlur={(e) => rename(t.id, e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") rename(t.id, e.currentTarget.value);
-                        if (e.key === "Escape") setEditing(null);
-                      }}
-                    />
-                  ) : (
-                    <span className="task-title" onDoubleClick={() => setEditing(t.id)}>
-                      {t.title}
-                    </span>
-                  )}
-                  <span className="task-meta">
-                    {t.start && (
-                      <span>
-                        {formatTime(t.start)}
-                        {t.end && ` – ${formatTime(t.end)}`}
+                {editing === t.id ? (
+                  <div className="task-main">
+                    <TaskEditor task={t} onSave={(e) => saveEdit(t.id, e)} onCancel={() => setEditing(null)} />
+                  </div>
+                ) : (
+                  <div className="task-main" onDoubleClick={() => setEditing(t.id)} title="Double-click to edit">
+                    <span className="task-title">{t.title}</span>
+                    <span className="task-meta">
+                      {t.start && (
+                        <span>
+                          {formatTime(t.start)}
+                          {t.end && ` – ${formatTime(t.end)}`}
+                        </span>
+                      )}
+                      <span className="cat" style={{ color: cat.color }}>
+                        {cat.label}
                       </span>
-                    )}
-                    <span className="cat" style={{ color: cat.color }}>
-                      {cat.label}
                     </span>
-                  </span>
-                </div>
+                  </div>
+                )}
+                {editing !== t.id && (
+                  <button className="icon-btn edit" title="Edit" aria-label="Edit task" onClick={() => setEditing(t.id)}>
+                    ✎
+                  </button>
+                )}
                 <button
                   className="icon-btn remove"
                   title="Delete"

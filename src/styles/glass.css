@@ -268,6 +268,13 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .cat { font-weight: 600; }
 .remove { opacity: 0; font-size: 12px; }
 .task:hover .remove { opacity: 0.7; }
+.edit { opacity: 0.4; font-size: 13px; }
+.task:hover .edit, .edit:focus-visible { opacity: 0.85; }
+.task-editor { display: flex; flex-direction: column; gap: 6px; padding: 2px 0; }
+.task-editor > .inline-edit { width: 100%; box-sizing: border-box; }
+.task-editor-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.task-editor-row label { display: flex; align-items: center; gap: 4px; }
+.task-editor-row input[type="time"] { color: inherit; color-scheme: dark; }
 .inline-edit {
   background: rgba(0, 0, 0, 0.15); border: 1px solid var(--rim);
   border-radius: 8px; padding: 2px 6px; font-size: 14px;
@@ -341,3 +348,4 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 
 @keyframes fade { from { opacity: 0; } }
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+.app.theme-light .task-editor-row input[type="time"] { color-scheme: light; }

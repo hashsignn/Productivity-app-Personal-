@@ -74,6 +74,21 @@ export function setPhase(t: TimerState, phase: Phase, s: TimerSettings): TimerSt
   return { ...t, phase, running: false, endsAt: null, remainingMs: durationMs(phase, s) };
 }
 
+/** Longest length, in minutes, any phase can be set to. */
+export const MAX_MINUTES = 600;
+
+/**
+ * Settings changed. If the current phase's length changed, the timer follows:
+ * a stopped timer starts over at the new length, a running one keeps the time
+ * already spent and moves its end time.
+ */
+export function applySettings(t: TimerState, prev: TimerSettings, next: TimerSettings, now: number): TimerState {
+  const delta = durationMs(t.phase, next) - durationMs(t.phase, prev);
+  if (delta === 0) return t;
+  if (!t.running) return reset(t, next);
+  return { ...t, endsAt: Math.max(now, (t.endsAt ?? now) + delta) };
+}
+
 function following(t: TimerState, s: TimerSettings, countedFocus: boolean): { phase: Phase; cycle: number } {
   if (t.phase !== "focus") return { phase: "focus", cycle: t.phase === "long" ? 0 : t.cycle };
   const cycle = countedFocus ? t.cycle + 1 : t.cycle;

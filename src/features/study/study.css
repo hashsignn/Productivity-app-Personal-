@@ -729,3 +729,31 @@
     transition: none !important;
   }
 }
+
+.st-root .st-clock-btn {
+  font: inherit;
+  font-size: 52px;
+  font-weight: 300;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  cursor: text;
+}
+
+.st-clock-btn:hover,
+.st-clock-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.st-clock-input {
+  font-family: inherit;
+  width: 3.2em;
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  text-align: center;
+}

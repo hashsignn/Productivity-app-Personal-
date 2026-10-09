@@ -53,4 +53,22 @@ describe("pomodoro timer", () => {
     expect(T.formatClock(61_001)).toBe("01:02");
     expect(T.formatClock(0)).toBe("00:00");
   });
+
+  it("applies a new length to the current phase", () => {
+    const longer = { ...s, focusMin: 50 };
+    // Stopped, even part-way through: starts over at the new length.
+    let t = T.pause(T.start(T.initialState(s), 0), 5 * MIN);
+    t = T.applySettings(t, s, longer, 5 * MIN);
+    expect(T.remaining(t, 5 * MIN)).toBe(50 * MIN);
+    // Running: keeps the time already spent.
+    t = T.start(T.initialState(s), 0);
+    t = T.applySettings(t, s, longer, 10 * MIN);
+    expect(T.remaining(t, 10 * MIN)).toBe(40 * MIN);
+    // Shortening below the time spent ends the phase now.
+    t = T.applySettings(t, longer, { ...s, focusMin: 5 }, 10 * MIN);
+    expect(T.remaining(t, 10 * MIN)).toBe(0);
+    // Changing another phase's length leaves this one alone.
+    const same = T.initialState(s);
+    expect(T.applySettings(same, s, { ...s, shortMin: 9 }, 0)).toBe(same);
+  });
 });

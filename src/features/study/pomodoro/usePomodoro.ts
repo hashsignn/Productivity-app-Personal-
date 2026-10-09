@@ -59,14 +59,14 @@ export function usePomodoro(data: StudyData | null, update: Update) {
   const setPhase = useCallback((p: T.Phase) => act((s, c) => T.setPhase(s, p, c)), [act]);
 
   const setSettings = useCallback(
-    (patch: Partial<T.TimerSettings>) =>
+    (patch: Partial<T.TimerSettings>) => {
+      const t = Date.now();
+      setNow(t);
       update((d) => {
         const settings = { ...d.timer.settings, ...patch };
-        const s = d.timer.state;
-        // An untouched, stopped timer picks up the new length straight away.
-        const fresh = !s.running && s.remainingMs === T.durationMs(s.phase, d.timer.settings);
-        return { ...d, timer: { settings, state: fresh ? T.reset(s, settings) : s } };
-      }),
+        return { ...d, timer: { settings, state: T.applySettings(d.timer.state, d.timer.settings, settings, t) } };
+      });
+    },
     [update],
   );
 

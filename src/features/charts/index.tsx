@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import { addDays, toISODate } from "../../lib/date";
 import type { Day } from "../../lib/types";
 import type { FeatureMeta } from "../../shell/registry";
+import { Icon } from "../../shell/Icon";
 import { CompletionChart, fmtDate, HEAT_WEEKS, hrs, HoursChart, pct, StreakCalendar } from "./charts";
 import { averageRate, dailyStats, hoursByCategory, STREAK_THRESHOLD, streaks } from "./stats";
 import { TooltipProvider } from "./Tooltip";
 import { useDays } from "./useDays";
 import "./charts.css";
 
-export const meta: FeatureMeta = { title: "Charts", icon: "📊", order: 30 };
+export const meta: FeatureMeta = { title: "Charts", icon: <Icon name="charts" size={20} />, order: 30 };
 
 const RANGES = [
   { days: 7, label: "7 days" },

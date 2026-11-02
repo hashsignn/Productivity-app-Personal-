@@ -27,6 +27,11 @@ body {
   --glass-rgb: 255, 255, 255;
   --rim: rgba(255, 255, 255, 0.38);
   --shade: rgba(10, 14, 30, 0.28);
+  /* Interaction fills: a brighter frost on hover, more on press/selected. */
+  --fill-hover: rgba(255, 255, 255, 0.12);
+  --fill-strong: rgba(255, 255, 255, 0.24);
+  --well: rgba(0, 0, 0, 0.18);
+  --focus: color-mix(in srgb, var(--accent) 85%, white);
   position: relative;
   height: 100%;
   display: flex;
@@ -36,12 +41,16 @@ body {
   overflow: hidden;
 }
 
-.app.theme-light .sheet { background-color: rgba(255, 255, 255, 0.6); }
+.app.theme-light .sheet { background-color: rgba(250, 251, 255, 0.93); }
 
 .app.theme-light {
   --text: rgba(16, 20, 32, 0.94);
   --muted: rgba(16, 20, 32, 0.6);
   --shade: rgba(255, 255, 255, 0.22);
+  --fill-hover: rgba(16, 20, 32, 0.07);
+  --fill-strong: rgba(255, 255, 255, 0.55);
+  --well: rgba(255, 255, 255, 0.35);
+  --focus: color-mix(in srgb, var(--accent) 70%, black);
 }
 
 /* ---- wallpaper ---- */
@@ -129,15 +138,15 @@ body {
   cursor: pointer;
   transition: background 0.2s, color 0.2s, transform 0.15s;
 }
-.rail-btn:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+.rail-btn:hover { background: var(--fill-hover); color: var(--text); }
 .rail-btn:active { transform: scale(0.94); }
 .rail-btn.active {
-  background: rgba(255, 255, 255, 0.24);
+  background: var(--fill-strong);
   color: var(--text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
-.rail-icon { font-size: 18px; line-height: 1; }
-.rail-label { font-size: 9.5px; font-weight: 600; }
+.rail-icon { display: grid; place-items: center; height: 22px; }
+.rail-label { font-size: 11px; font-weight: 600; letter-spacing: 0.01em; }
 
 .panel { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; }
 .panel.side { flex: none; width: 500px; max-width: 60%; }
@@ -149,6 +158,9 @@ body {
 button { font: inherit; color: inherit; }
 
 .icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
   width: 30px;
   height: 30px;
   border: 0;
@@ -160,7 +172,7 @@ button { font: inherit; color: inherit; }
   line-height: 1;
   transition: background 0.15s;
 }
-.icon-btn:hover { background: rgba(255, 255, 255, 0.16); }
+.icon-btn:hover { background: var(--fill-hover); }
 .icon-btn.close:hover { background: rgba(255, 70, 80, 0.75); }
 
 .btn {
@@ -178,11 +190,11 @@ button { font: inherit; color: inherit; }
 .btn:hover { filter: brightness(1.08); }
 .btn:active { transform: scale(0.96); }
 .btn:disabled { opacity: 0.45; cursor: default; }
-.btn.ghost { background: rgba(255, 255, 255, 0.14); color: var(--text); }
+.btn.ghost { background: var(--fill-hover); color: var(--text); border-color: var(--rim); }
 
 .chip {
   border: 1px solid var(--rim);
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--fill-hover);
   border-radius: 999px;
   padding: 3px 10px;
   font-size: 12px;
@@ -195,6 +207,20 @@ input, textarea {
   user-select: text;
 }
 input::placeholder, textarea::placeholder { color: var(--muted); }
+input, textarea { caret-color: var(--accent); }
+::selection { background: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--text); }
+
+/* One focus ring for the whole shell: keyboard users can always see where they are. */
+.app :where(button, [tabindex], input[type="range"]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.app :where(.add, .note, .paste-input, .inline-edit):focus-within {
+  border-color: var(--focus);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
 
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .row.end { justify-content: flex-end; }
@@ -241,13 +267,14 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   border-radius: 14px;
   transition: background 0.2s;
 }
-.task:hover { background: rgba(255, 255, 255, 0.08); }
+.task:hover { background: var(--fill-hover); }
 .task.current {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 .check {
   flex: none;
+  position: relative;
   width: 22px; height: 22px;
   border-radius: 50%;
   border: 2px solid var(--cat, var(--accent));
@@ -260,31 +287,43 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   transition: background 0.2s, transform 0.15s;
 }
 .check:active { transform: scale(0.85); }
+/* Bigger invisible hit area than the 22px ring. */
+.check::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; }
 .task.done .check { background: var(--cat, var(--accent)); }
 .task-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .task-title { font-size: 14px; line-height: 1.3; overflow-wrap: anywhere; }
 .task.done .task-title { text-decoration: line-through; opacity: 0.55; }
 .task-meta { display: flex; gap: 8px; font-size: 11.5px; color: var(--muted); }
 .cat { font-weight: 600; }
-.remove { opacity: 0; font-size: 12px; }
-.task:hover .remove { opacity: 0.7; }
-.edit { opacity: 0.4; font-size: 13px; }
-.task:hover .edit, .edit:focus-visible { opacity: 0.85; }
+/* Row actions stay quiet until the row is hovered or reached by keyboard. */
+.remove, .edit { opacity: 0; transition: opacity 0.15s, background 0.15s; }
+.task:hover .edit, .task:focus-within .edit,
+.task:hover .remove, .task:focus-within .remove { opacity: 0.8; }
+.edit:focus-visible, .remove:focus-visible { opacity: 1; }
+.icon-btn.remove:hover { background: rgba(255, 70, 80, 0.35); }
 .task-editor { display: flex; flex-direction: column; gap: 6px; padding: 2px 0; }
 .task-editor > .inline-edit { width: 100%; box-sizing: border-box; }
 .task-editor-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .task-editor-row label { display: flex; align-items: center; gap: 4px; }
 .task-editor-row input[type="time"] { color: inherit; color-scheme: dark; }
 .inline-edit {
-  background: rgba(0, 0, 0, 0.15); border: 1px solid var(--rim);
+  outline: none;
+  background: var(--well); border: 1px solid var(--rim);
   border-radius: 8px; padding: 2px 6px; font-size: 14px;
 }
 
 .empty { padding: 16px 10px; text-align: center; }
 .empty .row { justify-content: center; }
-.empty p { margin: 0 0 10px; color: var(--muted); }
+.empty p { margin: 0 auto 12px; max-width: 34ch; color: var(--muted); line-height: 1.45; }
+.empty em { font-style: normal; color: var(--text); }
 
+.add-wrap { display: flex; flex-direction: column; gap: 4px; }
 .add { display: flex; gap: 6px; padding: 8px; border-radius: 999px; }
+.add-preview {
+  display: flex; align-items: center; gap: 6px;
+  min-height: 18px; margin: 0 14px; line-height: 1.3;
+}
+.add-hint { margin-left: auto; opacity: 0.8; }
 .add input {
   flex: 1; min-width: 0; border: 0; background: transparent; outline: none;
   padding: 0 10px; font-size: 14px;
@@ -312,33 +351,49 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
   overflow-y: auto;
   padding: 16px 18px;
   --glass-alpha: 0.22;
-  background-color: rgba(22, 26, 44, 0.55);
+  /* Nested backdrop-filters cannot blur through the frosted backdrop, so the sheet
+     itself has to be nearly opaque or the panel behind shows through its text. */
+  background-color: rgba(22, 26, 44, 0.93);
   animation: rise 0.22s cubic-bezier(.2, .8, .2, 1);
 }
 .sheet.wide { width: min(560px, 100%); }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .sheet h2 { margin: 0; font-size: 17px; }
 .field { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; font-size: 13px; }
-.field > span { color: var(--muted); }
+.field > span { color: var(--text); font-weight: 600; }
+.field-hint { color: var(--muted); font-size: 12px; line-height: 1.4; }
+.sheet-section {
+  margin: 18px 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.sheet-section:first-of-type { margin-top: 4px; }
+.sheet-lede { margin: 0 0 10px; line-height: 1.45; }
+.sheet-foot { margin-top: 16px; }
 .field input[type="range"] { accent-color: var(--accent); width: 100%; }
 
 .segmented {
   display: flex; padding: 3px; gap: 2px;
-  border-radius: 12px; background: rgba(0, 0, 0, 0.18);
+  border-radius: 12px; background: var(--well);
 }
 .segmented button {
   flex: 1; border: 0; background: transparent; padding: 6px 4px;
   border-radius: 9px; font-size: 12px; cursor: pointer;
 }
-.segmented button.on { background: rgba(255, 255, 255, 0.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+.segmented button.on { background: var(--fill-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
 
-.swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
-.swatch.on { border-color: var(--text); }
+.swatch {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.swatch.on { border-color: var(--text); box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.25); }
 
 .paste-input {
   width: 100%; min-height: 160px; resize: vertical;
   border: 1px solid var(--rim); border-radius: 14px;
-  background: rgba(0, 0, 0, 0.18); padding: 10px 12px; outline: none;
+  background: var(--well); padding: 10px 12px; outline: none;
   font-size: 13px; line-height: 1.5;
 }
 .preview { list-style: none; margin: 6px 0 12px; padding: 0; max-height: 220px; overflow-y: auto; }
@@ -346,6 +401,35 @@ input::placeholder, textarea::placeholder { color: var(--muted); }
 .preview-time { flex: none; width: 118px; color: var(--muted); font-size: 12px; }
 .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
 
+.sheet:focus { outline: none; }
+
+/* ---- undo toast ---- */
+
+.toast {
+  position: sticky;
+  bottom: 4px;
+  z-index: 5;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  --glass-alpha: 0.3;
+  animation: rise 0.22s cubic-bezier(.2, .8, .2, 1);
+}
+.toast span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @keyframes fade { from { opacity: 0; } }
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
 .app.theme-light .task-editor-row input[type="time"] { color-scheme: light; }
+
+/* Keep state changes, drop the travel and the endless pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+  .sheet, .toast { animation: fade 0.18s ease-out; }
+  .rail-btn:active, .btn:active, .check:active { transform: none; }
+  .ring-fill { transition-duration: 0.2s; }
+}

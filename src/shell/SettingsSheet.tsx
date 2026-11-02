@@ -1,9 +1,17 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { useApp } from "./AppContext";
+import Sheet from "./Sheet";
 import { inTauri } from "../lib/backend";
-import { storeWallpaper, type GlassEffect, type WindowMode } from "../lib/settings";
+import { DEFAULT_SETTINGS, storeWallpaper, type GlassEffect, type WindowMode } from "../lib/settings";
 
-const ACCENTS = ["#7cc4ff", "#8a7dff", "#ff8fc8", "#4fd1a5", "#ffb86b", "#ffffff"];
+const ACCENTS: [string, string][] = [
+  ["#7cc4ff", "Sky"],
+  ["#8a7dff", "Iris"],
+  ["#ff8fc8", "Blossom"],
+  ["#4fd1a5", "Mint"],
+  ["#ffb86b", "Apricot"],
+  ["#ffffff", "White"],
+];
 
 function Segmented<T extends string>({
   value,
@@ -15,9 +23,9 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="segmented">
+    <div className="segmented" role="group">
       {options.map(([v, label]) => (
-        <button key={v} className={v === value ? "on" : ""} onClick={() => onChange(v)}>
+        <button key={v} className={v === value ? "on" : ""} aria-pressed={v === value} onClick={() => onChange(v)}>
           {label}
         </button>
       ))}
@@ -48,91 +56,122 @@ export default function SettingsSheet({ onClose }: { onClose: () => void }) {
     />
   );
 
-  return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet glass" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-head">
-          <h2>Appearance</h2>
-          <button className="icon-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
+  // Each choice carries a one-line explanation so nothing has to be tried to be understood.
+  const hint = (text: string) => <small className="field-hint">{text}</small>;
 
-        <label className="field">
-          <span>Wallpaper</span>
-          <div className="row">
-            <button className="btn" onClick={pickWallpaper}>
-              {settings.wallpaper ? "Change image" : "Choose image"}
-            </button>
-            {settings.wallpaper && (
-              <button className="btn ghost" onClick={() => updateSettings({ wallpaper: undefined })}>
-                Remove
-              </button>
-            )}
-          </div>
-        </label>
-        <label className="field">
-          <span>Wallpaper strength (lower shows your desktop)</span>
-          {slider("wallpaperOpacity")}
-        </label>
-        <label className="field">
-          <span>Wallpaper blur</span>
-          {slider("wallpaperBlur", 40, 1)}
-        </label>
-        <label className="field">
-          <span>Glass frost</span>
-          {slider("glassOpacity", 0.6)}
-        </label>
-        <label className="field">
-          <span>Window glass</span>
-          <Segmented<GlassEffect>
-            value={settings.effect}
-            options={[
-              ["acrylic", "See-through"],
-              ["mica", "Mica"],
-              ["none", "Off"],
-            ]}
-            onChange={(effect) => updateSettings({ effect })}
-          />
-        </label>
-        <label className="field">
-          <span>Window position</span>
-          <Segmented<WindowMode>
-            value={settings.windowMode}
-            options={[
-              ["normal", "Normal"],
-              ["top", "Always on top"],
-              ["desktop", "On desktop"],
-            ]}
-            onChange={(windowMode) => updateSettings({ windowMode })}
-          />
-        </label>
-        <label className="field">
-          <span>Text</span>
-          <Segmented
-            value={settings.theme}
-            options={[
-              ["dark", "Light text"],
-              ["light", "Dark text"],
-            ]}
-            onChange={(theme) => updateSettings({ theme })}
-          />
-        </label>
-        <label className="field">
-          <span>Accent</span>
-          <div className="row">
-            {ACCENTS.map((c) => (
-              <button
-                key={c}
-                className={`swatch ${settings.accent === c ? "on" : ""}`}
-                style={{ background: c }}
-                onClick={() => updateSettings({ accent: c })}
-                title={c}
-              />
-            ))}
-          </div>
-        </label>
+  return (
+    <Sheet title="Appearance" onClose={onClose}>
+      <h3 className="sheet-section">Look</h3>
+      <div className="field" role="group" aria-label="Text color">
+        <span>Text color</span>
+        <Segmented
+          value={settings.theme}
+          options={[
+            ["dark", "White text"],
+            ["light", "Black text"],
+          ]}
+          onChange={(theme) => updateSettings({ theme })}
+        />
+        {hint("Pick black text if your wallpaper or desktop is bright.")}
       </div>
-    </div>
+      <div className="field" role="group" aria-label="Accent color">
+        <span>Accent color</span>
+        <div className="row">
+          {ACCENTS.map(([c, name]) => (
+            <button
+              key={c}
+              className={`swatch ${settings.accent === c ? "on" : ""}`}
+              style={{ background: c }}
+              onClick={() => updateSettings({ accent: c })}
+              title={name}
+              aria-label={`${name} accent`}
+              aria-pressed={settings.accent === c}
+            />
+          ))}
+        </div>
+      </div>
+      <label className="field">
+        <span>Card frost</span>
+        {slider("glassOpacity", 0.6)}
+        {hint("More frost makes the cards easier to read over busy backgrounds.")}
+      </label>
+
+      <h3 className="sheet-section">Background</h3>
+      <div className="field" role="group" aria-label="Wallpaper">
+        <span>Wallpaper</span>
+        <div className="row">
+          <button className="btn" onClick={pickWallpaper}>
+            {settings.wallpaper ? "Change image" : "Choose image"}
+          </button>
+          {settings.wallpaper && (
+            <button className="btn ghost" onClick={() => updateSettings({ wallpaper: undefined })}>
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+      {settings.wallpaper && (
+        <>
+          <label className="field">
+            <span>Wallpaper visibility</span>
+            {slider("wallpaperOpacity")}
+            {hint("Lower lets your desktop show through.")}
+          </label>
+          <label className="field">
+            <span>Wallpaper blur</span>
+            {slider("wallpaperBlur", 40, 1)}
+          </label>
+        </>
+      )}
+      <div className="field" role="group" aria-label="Window see-through">
+        <span>Window see-through</span>
+        <Segmented<GlassEffect>
+          value={settings.effect}
+          options={[
+            ["acrylic", "Blurred desktop"],
+            ["mica", "Tinted"],
+            ["none", "Solid"],
+          ]}
+          onChange={(effect) => updateSettings({ effect })}
+        />
+      </div>
+
+      <h3 className="sheet-section">Window</h3>
+      <div className="field" role="group" aria-label="Where the window sits">
+        <span>Where the window sits</span>
+        <Segmented<WindowMode>
+          value={settings.windowMode}
+          options={[
+            ["normal", "Like any app"],
+            ["top", "Always on top"],
+            ["desktop", "On the desktop"],
+          ]}
+          onChange={(windowMode) => updateSettings({ windowMode })}
+        />
+        {hint(
+          settings.windowMode === "desktop"
+            ? "Stays behind your other windows, like a widget."
+            : settings.windowMode === "top"
+              ? "Floats above everything so your plan is always visible."
+              : "Behaves like a normal window.",
+        )}
+      </div>
+
+      <div className="row end sheet-foot">
+        <button
+          className="btn ghost"
+          onClick={() => {
+            // Colors, frost and blur only; the wallpaper and window position stay.
+            const { wallpaperOpacity, wallpaperBlur, glassOpacity, theme, effect, accent } = DEFAULT_SETTINGS;
+            updateSettings({ wallpaperOpacity, wallpaperBlur, glassOpacity, theme, effect, accent });
+          }}
+        >
+          Reset look
+        </button>
+        <button className="btn" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </Sheet>
   );
 }

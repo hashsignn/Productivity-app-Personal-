@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../../shell/AppContext";
 import type { FeatureMeta } from "../../shell/registry";
+import { Icon } from "../../shell/Icon";
 import type { Day, Task } from "../../lib/types";
 import { loadDay, onDayChanged, saveDay } from "../../lib/storage";
 import { addDays, durationMinutes, formatLongDate, formatTime, newId, toISODate, toMinutes } from "../../lib/date";
@@ -9,7 +10,7 @@ import ProgressRing from "./ProgressRing";
 import PasteSheet from "./PasteSheet";
 import TaskEditor, { type TaskEdit } from "./TaskEditor";
 
-export const meta: FeatureMeta = { title: "Today", icon: "✓", order: 0 };
+export const meta: FeatureMeta = { title: "Today", icon: <Icon name="today" size={20} />, order: 0 };
 
 function nowMinutes() {
   const d = new Date();
@@ -38,6 +39,7 @@ export default function Today() {
   const [pasting, setPasting] = useState(false);
   const [now, setNow] = useState(nowMinutes());
   const isToday = date === toISODate();
+  const addRef = useRef<HTMLInputElement>(null);
   const dateRef = useRef(date);
   dateRef.current = date;
 
@@ -98,11 +100,51 @@ export default function Today() {
     });
   };
 
+  // Deleting is one click, so keep the last removed task for a few seconds to undo.
+  const [removed, setRemoved] = useState<{ task: Task; index: number } | null>(null);
+  useEffect(() => {
+    if (!removed) return;
+    const id = setTimeout(() => setRemoved(null), 6000);
+    return () => clearTimeout(id);
+  }, [removed]);
+
+  const removeTask = (id: string) => {
+    const index = day?.tasks.findIndex((x) => x.id === id) ?? -1;
+    if (index < 0 || !day) return;
+    setRemoved({ task: day.tasks[index], index });
+    setTasks((ts) => ts.filter((x) => x.id !== id));
+  };
+
+  const undoRemove = () => {
+    if (!removed) return;
+    setTasks((ts) => [...ts.slice(0, removed.index), removed.task, ...ts.slice(removed.index)]);
+    setRemoved(null);
+  };
+
   const repeatYesterday = async () => {
     const prev = await loadDay(addDays(date, -1));
     const copied = prev.tasks.map((t) => ({ ...t, id: newId(), done: false, doneAt: undefined }));
     setTasks((ts) => [...ts, ...copied]);
   };
+
+  // What the add bar will create, shown live so the time syntax is never a guess.
+  const draftTask = useMemo(() => (draft.trim() ? parseLine(draft) : undefined), [draft]);
+
+  // Shortcuts when not typing: ← → change day, T jumps to today, N or / starts a new task.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.ctrlKey || e.metaKey || e.altKey || el.closest("input, textarea, [role=dialog]")) return;
+      if (e.key === "ArrowLeft") setDate(addDays(dateRef.current, -1));
+      else if (e.key === "ArrowRight") setDate(addDays(dateRef.current, 1));
+      else if (e.key === "t" || e.key === "T") setDate(toISODate());
+      else if (e.key === "n" || e.key === "N" || e.key === "/") addRef.current?.focus();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setDate]);
 
   const stats = useMemo(() => {
     const tasks = day?.tasks ?? [];
@@ -122,22 +164,22 @@ export default function Today() {
         <ProgressRing value={stats.total ? stats.done / stats.total : 0} />
         <div className="hero-text">
           <div className="date-nav">
-            <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} title="Previous day">
-              ‹
+            <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} title="Previous day (←)" aria-label="Previous day">
+              <Icon name="prev" size={18} />
             </button>
             <h1>{isToday ? "Today" : formatLongDate(date)}</h1>
-            <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} title="Next day">
-              ›
+            <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} title="Next day (→)" aria-label="Next day">
+              <Icon name="next" size={18} />
             </button>
             {!isToday && (
-              <button className="chip" onClick={() => setDate(toISODate())}>
-                Today
+              <button className="chip" onClick={() => setDate(toISODate())} title="Back to today (T)">
+                Back to today
               </button>
             )}
           </div>
           <p className="muted">
             {isToday ? formatLongDate(date) + " · " : ""}
-            {stats.done} of {stats.total} done
+            {stats.total ? `${stats.done} of ${stats.total} done` : "No tasks yet"}
           </p>
           {stats.current ? (
             <p className="now">
@@ -154,7 +196,10 @@ export default function Today() {
       <section className="glass card list">
         {day.tasks.length === 0 && (
           <div className="empty">
-            <p>No tasks for this day yet.</p>
+            <p>
+              Nothing planned yet. Paste your whole schedule at once, or type one task below,
+              like <em>Gym 6-7 pm</em>.
+            </p>
             <div className="row">
               <button className="btn" onClick={() => setPasting(true)}>
                 Paste a schedule
@@ -174,10 +219,11 @@ export default function Today() {
                 <button
                   className="check"
                   onClick={() => toggle(t.id)}
-                  aria-label={t.done ? "Mark not done" : "Mark done"}
+                  aria-label={`${t.done ? "Mark not done" : "Mark done"}: ${t.title}`}
+                  aria-pressed={t.done}
                   style={{ "--cat": cat.color } as React.CSSProperties}
                 >
-                  {t.done ? "✓" : ""}
+                  {t.done && <Icon name="check" size={14} />}
                 </button>
                 {editing === t.id ? (
                   <div className="task-main">
@@ -200,16 +246,17 @@ export default function Today() {
                   </div>
                 )}
                 {editing !== t.id && (
-                  <button className="icon-btn edit" title="Edit" aria-label="Edit task" onClick={() => setEditing(t.id)}>
-                    ✎
+                  <button className="icon-btn edit" title="Edit" aria-label={`Edit ${t.title}`} onClick={() => setEditing(t.id)}>
+                    <Icon name="edit" size={15} />
                   </button>
                 )}
                 <button
                   className="icon-btn remove"
                   title="Delete"
-                  onClick={() => setTasks((ts) => ts.filter((x) => x.id !== t.id))}
+                  aria-label={`Delete ${t.title}`}
+                  onClick={() => removeTask(t.id)}
                 >
-                  ✕
+                  <Icon name="trash" size={15} />
                 </button>
               </li>
             );
@@ -217,12 +264,19 @@ export default function Today() {
         </ul>
       </section>
 
-      <section className="glass card add">
+      <section className="add-wrap">
+      <div className="glass card add">
         <input
+          ref={addRef}
           value={draft}
           placeholder="Add a task, e.g. Gym 6-7 pm"
+          aria-label="New task"
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addTask()}
+          aria-describedby="add-preview"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") addTask();
+            if (e.key === "Escape") setDraft("");
+          }}
         />
         <button className="btn" onClick={addTask} disabled={!draft.trim()}>
           Add
@@ -230,14 +284,40 @@ export default function Today() {
         <button className="btn ghost" onClick={() => setPasting(true)} title="Paste a whole schedule">
           Paste
         </button>
+      </div>
+      <p id="add-preview" className="add-preview muted small" aria-live="polite">
+        {draftTask ? (
+          <>
+            <span className="dot" style={{ background: categoryOf(draftTask.category).color }} />
+            {draftTask.start
+              ? `${formatTime(draftTask.start)}${draftTask.end ? ` – ${formatTime(draftTask.end)}` : ""}`
+              : "No time"}
+            {" · "}
+            {categoryOf(draftTask.category).label}
+            <span className="add-hint">Enter to add</span>
+          </>
+        ) : (
+          "Add a time anywhere in the line: 7:30 am, 15:00-15:30, 6-7 pm. Press N to jump here."
+        )}
+      </p>
       </section>
 
       <textarea
         className="glass card note"
         placeholder="Notes for the day…"
+        aria-label="Notes for the day"
         value={day.note ?? ""}
         onChange={(e) => update((d) => ({ ...d, note: e.target.value || undefined }))}
       />
+
+      {removed && (
+        <div className="toast glass" role="status">
+          <span>Deleted “{removed.task.title}”</span>
+          <button className="btn ghost" onClick={undoRemove}>
+            Undo
+          </button>
+        </div>
+      )}
 
       {pasting && <PasteSheet date={date} onClose={() => setPasting(false)} />}
     </div>

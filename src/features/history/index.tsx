@@ -4,12 +4,13 @@ import { fromISODate } from "../../lib/date";
 import { deletePhoto, loadDay, onDayChanged, saveDay } from "../../lib/storage";
 import { useApp } from "../../shell/AppContext";
 import type { FeatureMeta } from "../../shell/registry";
+import { Icon } from "../../shell/Icon";
 import { formatShort, monthOf } from "./dates";
 import { loadAllDays, pickPhotos, summarize, type Day, type DaySummary } from "./historyApi";
 import DayDetail from "./DayDetail";
 import MonthCalendar from "./MonthCalendar";
 
-export const meta: FeatureMeta = { title: "History", icon: "🗓", order: 20 };
+export const meta: FeatureMeta = { title: "History", icon: <Icon name="history" size={20} />, order: 20 };
 
 const byDateDesc = (a: Day, b: Day) => b.date.localeCompare(a.date);
 

@@ -1,11 +1,12 @@
 import { useApp } from "./AppContext";
 import { close, minimize } from "../lib/windowControls";
 import type { WindowMode } from "../lib/settings";
+import { Icon, type ShellIconName } from "./Icon";
 
-const MODES: { mode: WindowMode; icon: string; label: string }[] = [
-  { mode: "normal", icon: "◻︎", label: "Normal window" },
-  { mode: "top", icon: "📌", label: "Pinned on top" },
-  { mode: "desktop", icon: "🖥", label: "Stuck to desktop" },
+const MODES: { mode: WindowMode; icon: ShellIconName; label: string }[] = [
+  { mode: "normal", icon: "window", label: "Normal window" },
+  { mode: "top", icon: "pin", label: "Pinned on top" },
+  { mode: "desktop", icon: "desktop", label: "Stuck to desktop" },
 ];
 
 export default function TitleBar({ onSettings }: { onSettings: () => void }) {
@@ -23,18 +24,19 @@ export default function TitleBar({ onSettings }: { onSettings: () => void }) {
         <button
           className="icon-btn"
           title={`${mode.label}. Click for: ${nextMode.label}`}
+          aria-label={`Window: ${mode.label}. Switch to ${nextMode.label}`}
           onClick={() => updateSettings({ windowMode: nextMode.mode })}
         >
-          {mode.icon}
+          <Icon name={mode.icon} size={16} />
         </button>
-        <button className="icon-btn" title="Appearance" onClick={onSettings}>
-          ⚙︎
+        <button className="icon-btn" title="Appearance" aria-label="Appearance" onClick={onSettings}>
+          <Icon name="settings" size={16} />
         </button>
-        <button className="icon-btn" title="Minimize" onClick={minimize}>
-          –
+        <button className="icon-btn" title="Minimize" aria-label="Minimize" onClick={minimize}>
+          <Icon name="minimize" size={16} />
         </button>
-        <button className="icon-btn close" title="Close" onClick={close}>
-          ✕
+        <button className="icon-btn close" title="Close" aria-label="Close" onClick={close}>
+          <Icon name="close" size={16} />
         </button>
       </div>
     </header>

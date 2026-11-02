@@ -81,7 +81,7 @@ export default function App() {
         <Wallpaper />
         <TitleBar onSettings={() => setShowSettings(true)} />
         <div className="body">
-          <nav className="rail glass">
+          <nav className="rail glass" aria-label="Panels">
             {FEATURES.map((f) => {
               const active = f.placement === "side" ? sideId === f.id : mainId === f.id;
               return (
@@ -89,6 +89,7 @@ export default function App() {
                   key={f.id}
                   className={`rail-btn ${active ? "active" : ""}`}
                   title={f.title}
+                  aria-pressed={active}
                   onClick={() => (f.placement === "side" ? toggleSide(f.id) : setMainId(f.id))}
                 >
                   <span className="rail-icon">{f.icon}</span>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../../shell/AppContext";
 import { formatLongDate, formatTime } from "../../lib/date";
 import { categoryOf, parseSchedule } from "../../lib/parser";
@@ -10,6 +10,14 @@ export default function PasteSheet({ date, onClose }: { date: string; onClose: (
   const [text, setText] = useState("");
   const parsed = useMemo(() => parseSchedule(text), [text]);
   const target = parsed.date ?? date;
+  const [existing, setExisting] = useState(0);
+  useEffect(() => {
+    let live = true;
+    loadDay(target).then((d) => live && setExisting(d.tasks.length));
+    return () => {
+      live = false;
+    };
+  }, [target]);
 
   async function importInto(mode: "replace" | "append") {
     const day = await loadDay(target);
@@ -21,6 +29,10 @@ export default function PasteSheet({ date, onClose }: { date: string; onClose: (
 
   return (
     <Sheet title="Paste a schedule" wide onClose={onClose}>
+        <p className="muted small sheet-lede">
+          One task per line, with a time anywhere in it. A date line on top (like 29 July 2026)
+          puts the tasks on that day; otherwise they go on {formatLongDate(date)}.
+        </p>
         <textarea
           autoFocus
           className="paste-input"
@@ -29,10 +41,15 @@ export default function PasteSheet({ date, onClose }: { date: string; onClose: (
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
+        {text.trim() && parsed.tasks.length === 0 && (
+          <p className="muted small">No tasks found yet. Put each task on its own line.</p>
+        )}
         {parsed.tasks.length > 0 && (
           <>
             <p className="muted small">
-              {parsed.tasks.length} tasks for {formatLongDate(target)}
+              {parsed.tasks.length} {parsed.tasks.length === 1 ? "task" : "tasks"} for{" "}
+              <strong>{formatLongDate(target)}</strong>
+              {existing > 0 && ` · that day already has ${existing}`}
             </p>
             <ul className="preview">
               {parsed.tasks.map((t) => (
@@ -47,12 +64,20 @@ export default function PasteSheet({ date, onClose }: { date: string; onClose: (
               ))}
             </ul>
             <div className="row end">
-              <button className="btn ghost" onClick={() => importInto("append")}>
-                Add to day
-              </button>
-              <button className="btn" onClick={() => importInto("replace")}>
-                Replace day
-              </button>
+              {existing > 0 ? (
+                <>
+                  <button className="btn ghost" onClick={() => importInto("replace")}>
+                    Replace the {existing} existing
+                  </button>
+                  <button className="btn" onClick={() => importInto("append")}>
+                    Add {parsed.tasks.length} to the day
+                  </button>
+                </>
+              ) : (
+                <button className="btn" onClick={() => importInto("append")}>
+                  Add {parsed.tasks.length} {parsed.tasks.length === 1 ? "task" : "tasks"}
+                </button>
+              )}
             </div>
           </>
         )}

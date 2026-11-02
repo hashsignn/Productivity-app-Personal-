@@ -39,6 +39,7 @@ export default function Today() {
   const [pasting, setPasting] = useState(false);
   const [now, setNow] = useState(nowMinutes());
   const isToday = date === toISODate();
+  const addRef = useRef<HTMLInputElement>(null);
   const dateRef = useRef(date);
   dateRef.current = date;
 
@@ -126,6 +127,25 @@ export default function Today() {
     setTasks((ts) => [...ts, ...copied]);
   };
 
+  // What the add bar will create, shown live so the time syntax is never a guess.
+  const draftTask = useMemo(() => (draft.trim() ? parseLine(draft) : undefined), [draft]);
+
+  // Shortcuts when not typing: ← → change day, T jumps to today, N or / starts a new task.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.ctrlKey || e.metaKey || e.altKey || el.closest("input, textarea, [role=dialog]")) return;
+      if (e.key === "ArrowLeft") setDate(addDays(dateRef.current, -1));
+      else if (e.key === "ArrowRight") setDate(addDays(dateRef.current, 1));
+      else if (e.key === "t" || e.key === "T") setDate(toISODate());
+      else if (e.key === "n" || e.key === "N" || e.key === "/") addRef.current?.focus();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setDate]);
+
   const stats = useMemo(() => {
     const tasks = day?.tasks ?? [];
     const done = tasks.filter((t) => t.done).length;
@@ -144,22 +164,22 @@ export default function Today() {
         <ProgressRing value={stats.total ? stats.done / stats.total : 0} />
         <div className="hero-text">
           <div className="date-nav">
-            <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} title="Previous day" aria-label="Previous day">
+            <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} title="Previous day (←)" aria-label="Previous day">
               <Icon name="prev" size={18} />
             </button>
             <h1>{isToday ? "Today" : formatLongDate(date)}</h1>
-            <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} title="Next day" aria-label="Next day">
+            <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} title="Next day (→)" aria-label="Next day">
               <Icon name="next" size={18} />
             </button>
             {!isToday && (
-              <button className="chip" onClick={() => setDate(toISODate())}>
-                Today
+              <button className="chip" onClick={() => setDate(toISODate())} title="Back to today (T)">
+                Back to today
               </button>
             )}
           </div>
           <p className="muted">
             {isToday ? formatLongDate(date) + " · " : ""}
-            {stats.done} of {stats.total} done
+            {stats.total ? `${stats.done} of ${stats.total} done` : "No tasks yet"}
           </p>
           {stats.current ? (
             <p className="now">
@@ -176,7 +196,10 @@ export default function Today() {
       <section className="glass card list">
         {day.tasks.length === 0 && (
           <div className="empty">
-            <p>No tasks for this day yet.</p>
+            <p>
+              Nothing planned yet. Paste your whole schedule at once, or type one task below,
+              like <em>Gym 6-7 pm</em>.
+            </p>
             <div className="row">
               <button className="btn" onClick={() => setPasting(true)}>
                 Paste a schedule
@@ -241,13 +264,19 @@ export default function Today() {
         </ul>
       </section>
 
-      <section className="glass card add">
+      <section className="add-wrap">
+      <div className="glass card add">
         <input
+          ref={addRef}
           value={draft}
           placeholder="Add a task, e.g. Gym 6-7 pm"
           aria-label="New task"
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addTask()}
+          aria-describedby="add-preview"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") addTask();
+            if (e.key === "Escape") setDraft("");
+          }}
         />
         <button className="btn" onClick={addTask} disabled={!draft.trim()}>
           Add
@@ -255,6 +284,22 @@ export default function Today() {
         <button className="btn ghost" onClick={() => setPasting(true)} title="Paste a whole schedule">
           Paste
         </button>
+      </div>
+      <p id="add-preview" className="add-preview muted small" aria-live="polite">
+        {draftTask ? (
+          <>
+            <span className="dot" style={{ background: categoryOf(draftTask.category).color }} />
+            {draftTask.start
+              ? `${formatTime(draftTask.start)}${draftTask.end ? ` – ${formatTime(draftTask.end)}` : ""}`
+              : "No time"}
+            {" · "}
+            {categoryOf(draftTask.category).label}
+            <span className="add-hint">Enter to add</span>
+          </>
+        ) : (
+          "Add a time anywhere in the line: 7:30 am, 15:00-15:30, 6-7 pm. Press N to jump here."
+        )}
+      </p>
       </section>
 
       <textarea

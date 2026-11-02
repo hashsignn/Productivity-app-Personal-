@@ -3,6 +3,7 @@ import { useApp } from "../../shell/AppContext";
 import { formatLongDate, formatTime } from "../../lib/date";
 import { categoryOf, parseSchedule } from "../../lib/parser";
 import { loadDay, saveDay } from "../../lib/storage";
+import Sheet from "../../shell/Sheet";
 
 export default function PasteSheet({ date, onClose }: { date: string; onClose: () => void }) {
   const { setDate } = useApp();
@@ -19,17 +20,11 @@ export default function PasteSheet({ date, onClose }: { date: string; onClose: (
   }
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet glass wide" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-head">
-          <h2>Paste a schedule</h2>
-          <button className="icon-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
+    <Sheet title="Paste a schedule" wide onClose={onClose}>
         <textarea
           autoFocus
           className="paste-input"
+          aria-label="Schedule text"
           placeholder={"29 July 2026\n* Wake up @ 7:00 am\n* Breakfast 7:30-8:00 am\n* Sleep 22:00-4:30 am"}
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -61,7 +56,6 @@ export default function PasteSheet({ date, onClose }: { date: string; onClose: (
             </div>
           </>
         )}
-      </div>
-    </div>
+    </Sheet>
   );
 }

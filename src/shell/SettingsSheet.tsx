@@ -1,9 +1,17 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { useApp } from "./AppContext";
+import Sheet from "./Sheet";
 import { inTauri } from "../lib/backend";
 import { storeWallpaper, type GlassEffect, type WindowMode } from "../lib/settings";
 
-const ACCENTS = ["#7cc4ff", "#8a7dff", "#ff8fc8", "#4fd1a5", "#ffb86b", "#ffffff"];
+const ACCENTS: [string, string][] = [
+  ["#7cc4ff", "Sky"],
+  ["#8a7dff", "Iris"],
+  ["#ff8fc8", "Blossom"],
+  ["#4fd1a5", "Mint"],
+  ["#ffb86b", "Apricot"],
+  ["#ffffff", "White"],
+];
 
 function Segmented<T extends string>({
   value,
@@ -15,9 +23,9 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="segmented">
+    <div className="segmented" role="group">
       {options.map(([v, label]) => (
-        <button key={v} className={v === value ? "on" : ""} onClick={() => onChange(v)}>
+        <button key={v} className={v === value ? "on" : ""} aria-pressed={v === value} onClick={() => onChange(v)}>
           {label}
         </button>
       ))}
@@ -49,16 +57,9 @@ export default function SettingsSheet({ onClose }: { onClose: () => void }) {
   );
 
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet glass" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-head">
-          <h2>Appearance</h2>
-          <button className="icon-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
+    <Sheet title="Appearance" onClose={onClose}>
 
-        <label className="field">
+        <div className="field" role="group" aria-label="Wallpaper">
           <span>Wallpaper</span>
           <div className="row">
             <button className="btn" onClick={pickWallpaper}>
@@ -70,7 +71,7 @@ export default function SettingsSheet({ onClose }: { onClose: () => void }) {
               </button>
             )}
           </div>
-        </label>
+        </div>
         <label className="field">
           <span>Wallpaper strength (lower shows your desktop)</span>
           {slider("wallpaperOpacity")}
@@ -83,7 +84,7 @@ export default function SettingsSheet({ onClose }: { onClose: () => void }) {
           <span>Glass frost</span>
           {slider("glassOpacity", 0.6)}
         </label>
-        <label className="field">
+        <div className="field" role="group" aria-label="Window glass">
           <span>Window glass</span>
           <Segmented<GlassEffect>
             value={settings.effect}
@@ -94,8 +95,8 @@ export default function SettingsSheet({ onClose }: { onClose: () => void }) {
             ]}
             onChange={(effect) => updateSettings({ effect })}
           />
-        </label>
-        <label className="field">
+        </div>
+        <div className="field" role="group" aria-label="Window position">
           <span>Window position</span>
           <Segmented<WindowMode>
             value={settings.windowMode}
@@ -106,8 +107,8 @@ export default function SettingsSheet({ onClose }: { onClose: () => void }) {
             ]}
             onChange={(windowMode) => updateSettings({ windowMode })}
           />
-        </label>
-        <label className="field">
+        </div>
+        <div className="field" role="group" aria-label="Text">
           <span>Text</span>
           <Segmented
             value={settings.theme}
@@ -117,22 +118,23 @@ export default function SettingsSheet({ onClose }: { onClose: () => void }) {
             ]}
             onChange={(theme) => updateSettings({ theme })}
           />
-        </label>
-        <label className="field">
+        </div>
+        <div className="field" role="group" aria-label="Accent">
           <span>Accent</span>
           <div className="row">
-            {ACCENTS.map((c) => (
+            {ACCENTS.map(([c, name]) => (
               <button
                 key={c}
                 className={`swatch ${settings.accent === c ? "on" : ""}`}
                 style={{ background: c }}
                 onClick={() => updateSettings({ accent: c })}
-                title={c}
+                title={name}
+                aria-label={`${name} accent`}
+                aria-pressed={settings.accent === c}
               />
             ))}
           </div>
-        </label>
-      </div>
-    </div>
+        </div>
+    </Sheet>
   );
 }
